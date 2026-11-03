@@ -84,7 +84,6 @@ const DICT = {
     allGames: '← Tous les jeux',
     fullscreen: 'Plein écran',
     exitFullscreen: 'Quitter le plein écran',
-    rotateTip: 'Astuce : passe ton téléphone en paysage pour une vue plus grande.',
     gestureTip: 'Glisse ← → : déplacer · ↑ ou toucher : tourner · ↓ : poser · appui long : réserve',
   },
   en: {
@@ -171,7 +170,6 @@ const DICT = {
     allGames: '← All games',
     fullscreen: 'Fullscreen',
     exitFullscreen: 'Exit fullscreen',
-    rotateTip: 'Tip: turn your phone to landscape for a bigger view.',
     gestureTip: 'Swipe ← →: move · ↑ or tap: rotate · ↓: drop · long press: hold',
   },
 };

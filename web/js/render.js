@@ -64,8 +64,11 @@ export class Renderer {
       this.mini = null;
       if (versus) { w = 1020; h = 640; this.units = [{ ox: 20, oy: 64, c }, { ox: 520, oy: 64, c }]; } else { w = 720; h = 668; this.units = [{ ox: 80, oy: 54, c }]; }
     } else {
-      const c = 22;
-      if (versus) { w = 480; h = 700; this.units = [{ ox: 20, oy: 206, c }]; this.mini = { ox: 372, oy: 8, c: 9 }; } else { w = 480; h = 548; this.units = [{ ox: 20, oy: 54, c }]; this.mini = null; }
+      // téléphone debout : le plateau prend presque toute la largeur ; réserve, pièces à venir et adversaire sont dans la bande du haut
+      const c = 30;
+      w = 360; h = 804;
+      this.units = [{ ox: 30, oy: 188, c, tall: true }];
+      this.mini = versus ? { ox: 270, oy: 62, c: 6, above: true } : null;
     }
     this.canvas.width = w;
     this.canvas.height = h;
@@ -135,7 +138,26 @@ export class Renderer {
     for (const [cx, cy] of cells) cell(ctx, ox + cx * c, oy + cy * c, c, type, alpha);
   }
 
+  /** Disposition « tall » : bande du haut (score, réserve, pièces à venir, adversaire en petit) puis le plateau en grand. */
+  tallUnit(ctx, v, ox, oy, c, idx, now) {
+    const L = this.labels;
+    const top = oy - 128;
+    this.text(ctx, String(v.score ?? 0), ox, top - 24, 26, '#ffffff', 'left', 800);
+    this.text(ctx, `${v.lines ?? 0} ${L.lines ?? 'LINES'} · ${L.level ?? 'LEVEL'} ${v.level ?? 1}`, ox, top - 6, 12.5, '#8fa0d6', 'left', 700);
+    this.panel(ctx, ox, top, 80, 116);
+    this.text(ctx, L.hold ?? 'HOLD', ox + 40, top + 17, 11, '#8fa0d6', 'center', 700);
+    this.preview(ctx, v.hold, ox, top + 22, 80, 90, 16, v.canHold ? 1 : 0.35);
+    const nextW = this.mini ? 144 : 212;
+    const count = this.mini ? 3 : 4;
+    this.panel(ctx, ox + 88, top, nextW, 116);
+    this.text(ctx, L.next ?? 'NEXT', ox + 88 + nextW / 2, top + 17, 11, '#8fa0d6', 'center', 700);
+    const cs = Math.min(16, Math.floor((nextW / count - 6) / 4));           // la pièce la plus large (4 cases) doit tenir dans sa case
+    (v.queue ?? []).slice(0, count).forEach((type, i) => this.preview(ctx, type, ox + 88 + (i * nextW) / count, top + 22, nextW / count, 90, cs));
+    this.boardInner(ctx, v, ox, oy, c, idx, now);
+  }
+
   unit(ctx, v, ox, oy, c, idx, now) {
+    if (this.units[idx]?.tall) return this.tallUnit(ctx, v, ox, oy, c, idx, now);
     const bx = ox + 5 * c;
     const pw = 4.5 * c;
     const L = this.labels;
@@ -152,7 +174,16 @@ export class Renderer {
       this.text(ctx, k, ox + pw / 2, sy + (1.15 + i * 2.35) * c, c * 0.46, '#8fa0d6', 'center', 700);
       this.text(ctx, val, ox + pw / 2, sy + (2.2 + i * 2.35) * c, c * 0.85, '#ffffff', 'center', 800);
     });
-    // plateau
+    this.boardInner(ctx, v, bx, oy, c, idx, now);
+    // pièces à venir
+    const nx = bx + 10 * c + 0.5 * c;
+    this.panel(ctx, nx, oy, pw, 13.6 * c);
+    this.text(ctx, L.next ?? 'NEXT', nx + pw / 2, oy + 0.95 * c, c * 0.5, '#8fa0d6', 'center', 700);
+    (v.queue ?? []).slice(0, 5).forEach((type, i) => this.preview(ctx, type, nx, oy + (1.3 + i * 2.5) * c, pw, 2.3 * c, c * (i === 0 ? 0.62 : 0.5)));
+  }
+
+  /** Le plateau lui-même : fond, case posées, fantôme, pièce, éclairs, jauge des lignes reçues, textes qui montent, voile si perdu. */
+  boardInner(ctx, v, bx, oy, c, idx, now) {
     ctx.fillStyle = '#0a0f21';
     ctx.fillRect(bx, oy, 10 * c, 20 * c);
     ctx.strokeStyle = 'rgba(255,255,255,0.05)';
@@ -201,11 +232,6 @@ export class Renderer {
     ctx.strokeStyle = 'rgba(255,255,255,0.18)';
     ctx.lineWidth = 2;
     ctx.strokeRect(bx - 1, oy - 1, 10 * c + 2, 20 * c + 2);
-    // pièces à venir
-    const nx = bx + 10 * c + 0.5 * c;
-    this.panel(ctx, nx, oy, pw, 13.6 * c);
-    this.text(ctx, L.next ?? 'NEXT', nx + pw / 2, oy + 0.95 * c, c * 0.5, '#8fa0d6', 'center', 700);
-    (v.queue ?? []).slice(0, 5).forEach((type, i) => this.preview(ctx, type, nx, oy + (1.3 + i * 2.5) * c, pw, 2.3 * c, c * (i === 0 ? 0.62 : 0.5)));
     // textes qui montent
     for (const p of this.pops) {
       if (p.u !== idx) continue;
@@ -223,8 +249,11 @@ export class Renderer {
   /** Plateau de l'adversaire en petit (disposition « tall ») : sa pile, ses lignes à recevoir et son nom. */
   miniBoard(ctx, v, m) {
     const { ox, oy, c } = m;
-    this.text(ctx, v.name ?? '', ox - 14, oy + 14, 15, '#eef2ff', 'right', 700);
-    this.text(ctx, `${v.lines ?? 0} ${this.labels.lines ?? 'LINES'}`, ox - 14, oy + 36, 13, '#8fa0d6', 'right', 600);
+    if (m.above) this.text(ctx, `${v.name ?? ''} · ${v.lines ?? 0}`, ox + 10 * c, oy - 6, 11, '#c9d4ff', 'right', 700);
+    else {
+      this.text(ctx, v.name ?? '', ox - 14, oy + 14, 15, '#eef2ff', 'right', 700);
+      this.text(ctx, `${v.lines ?? 0} ${this.labels.lines ?? 'LINES'}`, ox - 14, oy + 36, 13, '#8fa0d6', 'right', 600);
+    }
     ctx.fillStyle = '#0a0f21';
     ctx.fillRect(ox, oy, 10 * c, 20 * c);
     const g = v.g ?? '0'.repeat(200);

@@ -21,7 +21,6 @@ $ws = (string) getenv('BLOCKFALL_WS');
     <button id="pause-btn" class="icon-btn" hidden aria-label="Pause">⏸</button>
     <button id="fs-btn" class="icon-btn" hidden data-i18n-aria="fullscreen">⛶</button>
     <p id="gesture-tip" data-i18n="gestureTip"></p>
-    <p id="rotate-tip" data-i18n="rotateTip"></p>
   </div>
 
   <section id="menu" class="panel">

@@ -18,8 +18,8 @@ player (lobby, quick match, challenges, Elo leaderboard). French and English, ke
 - **Ranked matches** with an Elo rating, without any account: each browser has a secret token (only its SHA-256 hash is stored)
   that reserves the nickname. Anti-collusion: gains shrink when the same two players meet again within 24 hours.
 - **Phones**: no buttons, gestures on the whole play area. Swipe left or right to move the piece one cell per cell your finger
-  travels, swipe up or tap to rotate, swipe down to drop it at once, long press to hold. The board takes the width in portrait (the
-  opponent's board is a small one at the top) and the full height in landscape; fullscreen with landscape lock on Android, screen
+  travels, swipe up or tap to rotate, swipe down to drop it at once, long press to hold. In portrait the board takes almost the whole screen (hold, next pieces and the
+  opponent's small board sit in a strip above it); in landscape it takes the full height; fullscreen with landscape lock on Android, screen
   kept awake, notches and home bar respected.
 - Sounds are synthesized (no audio files); the solo and computer modes work offline.
 

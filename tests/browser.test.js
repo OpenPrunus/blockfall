@@ -219,7 +219,7 @@ describe('mobile : des gestes, pas de boutons', () => {
   const touch = touchEvent;
   const center = async () => { const r = await rect('#game'); return { x: r.cx, y: r.cy, cell: (r.w / (await ev('window.__blockfall.renderer.w'))) * (await ev('window.__blockfall.renderer.units[0].c')) }; };
 
-  test('portrait : plus de boutons, le plateau prend toute la largeur, rien ne déborde', async () => {
+  test('portrait : plus de boutons, un grand plateau qui remplit l\'écran, rien ne déborde', async () => {
     await open(PHONE_PORTRAIT);
     await startMode('ai');
     assert.equal(await ev('document.querySelector("#touch")'), null, 'plus de barre de boutons');
@@ -227,9 +227,13 @@ describe('mobile : des gestes, pas de boutons', () => {
     assert.equal(await ev('document.body.dataset.layout'), 'tall');
     assert.equal(await noScroll(PHONE_PORTRAIT), true);
     const canvas = await rect('#game');
-    assert.ok(canvas.w >= PHONE_PORTRAIT.w * 0.98, `largeur utilisée : ${Math.round(canvas.w)} / ${PHONE_PORTRAIT.w}`);
-    assert.ok(canvas.h >= 520, `hauteur : ${Math.round(canvas.h)}`);
-    assert.equal(await ev('getComputedStyle(document.querySelector("#rotate-tip")).display'), 'block', 'astuce de rotation');
+    const scale = canvas.w / (await ev('window.__blockfall.renderer.w'));
+    const boardW = 10 * (await ev('window.__blockfall.renderer.units[0].c')) * scale;
+    const boardH = 20 * (await ev('window.__blockfall.renderer.units[0].c')) * scale;
+    assert.ok(boardW >= PHONE_PORTRAIT.w * 0.78, `le plateau prend la largeur : ${Math.round(boardW)} px sur ${PHONE_PORTRAIT.w}`);
+    assert.ok(boardH >= PHONE_PORTRAIT.h * 0.7, `et la hauteur : ${Math.round(boardH)} px sur ${PHONE_PORTRAIT.h}`);
+    assert.ok(canvas.h >= PHONE_PORTRAIT.h * 0.95, `l'écran est bien rempli : ${Math.round(canvas.h)} / ${PHONE_PORTRAIT.h}`);
+    assert.equal(await ev('document.querySelector("#rotate-tip")'), null, 'plus d\'astuce qui recouvre le plateau');
     assert.equal(await ev('document.querySelector("#gesture-tip").classList.contains("show")'), true, 'rappel des gestes au début');
     assert.equal(await ev('!document.querySelector("#fs-btn").hidden'), true, 'plein écran en jeu');
     await shot('05-phone-portrait');

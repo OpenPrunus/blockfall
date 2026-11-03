@@ -152,8 +152,11 @@ function applyLayout() {
   const versus = app.mode === 'ai' || app.mode === 'online';
   if (kind !== renderer.kind || versus !== renderer.versus) renderer.setLayout(kind, versus);
   document.body.dataset.layout = kind;
-  const r = $('#stage').getBoundingClientRect();
-  const s = Math.min(r.width / renderer.w, r.height / renderer.h);
+  const stage = $('#stage');
+  const cs = getComputedStyle(stage);
+  const aw = stage.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+  const ah = stage.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+  const s = Math.min(aw / renderer.w, ah / renderer.h);
   canvas.style.width = `${Math.floor(renderer.w * s)}px`;
   canvas.style.height = `${Math.floor(renderer.h * s)}px`;
 }
