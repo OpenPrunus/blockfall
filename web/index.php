@@ -10,6 +10,11 @@ $ws = (string) getenv('BLOCKFALL_WS');
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
   <meta name="theme-color" content="#0b1020">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <script src="pwa.js" defer></script>
   <title>Blockfall</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230b1020'/%3E%3Crect x='4' y='4' width='8' height='8' fill='%2319d3f3'/%3E%3Crect x='12' y='4' width='8' height='8' fill='%23b04cd9'/%3E%3Crect x='20' y='4' width='8' height='8' fill='%23f7d308'/%3E%3Crect x='12' y='12' width='8' height='8' fill='%23b04cd9'/%3E%3Crect x='4' y='20' width='8' height='8' fill='%23f2494f'/%3E%3Crect x='12' y='20' width='8' height='8' fill='%233fd66b'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="css/style.css">

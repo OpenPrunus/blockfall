@@ -23,6 +23,7 @@ player (lobby, quick match, challenges, Elo leaderboard). French and English, ke
   kept awake, notches and home bar respected.
 - Sounds are synthesized (no audio files); the solo and computer modes work offline.
 
+- **Installable and playable offline** (PWA): web manifest, icons, and a service worker that serves the last visit's files when there is no network. Solo and computer modes work offline; online play shows a clear message.
 ## Quick start
 
 ```bash
