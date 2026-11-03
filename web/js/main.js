@@ -79,11 +79,11 @@ const ctl = new Controller({
     if (app.mode === 'online') net.sendKeys(held);
   },
   onAction: (a) => {
-    audio.play(a === 'hd' ? 'drop' : a === 'hold' ? 'hold' : 'rotate');
+    audio.play(a === 'hd' ? 'drop' : a === 'hold' ? 'hold' : a === 'left' || a === 'right' ? 'move' : 'rotate');
     if (app.mode === 'online') net.sendAct(a);
   },
 });
-ctl.bindTouch($('#touch'));
+ctl.bindGestures($('#stage'), () => (renderer.units[0]?.c ?? 24) * (canvas.getBoundingClientRect().width / renderer.w));
 
 const isTouchDevice = () => window.matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
 const inGame = () => app.mode !== null && Object.values(panels).every((p) => p.hidden);
@@ -91,7 +91,6 @@ const inGame = () => app.mode !== null && Object.values(panels).every((p) => p.h
 function updateInput() {
   const on = inGame() && !app.paused && !(app.mode !== 'online' && app.countdown > 0 && false);
   ctl.setEnabled(on);
-  $('#touch').hidden = !(app.mode !== null && isTouchDevice());
   $('#pause-btn').hidden = app.mode === null;
   $('#fs-btn').hidden = !(app.mode !== null && canFullscreen());
   document.body.classList.toggle('playing', app.mode !== null && Object.values(panels).every((p) => p.hidden));
@@ -189,6 +188,16 @@ function startAI() {
   beginLocal();
 }
 
+let gestureTipTimer = 0;
+/** Au début d'une partie sur tactile, un rappel des gestes disparaît tout seul. */
+function showGestureTip() {
+  if (!isTouchDevice()) return;
+  const el = $('#gesture-tip');
+  el.classList.add('show');
+  clearTimeout(gestureTipTimer);
+  gestureTipTimer = setTimeout(() => el.classList.remove('show'), 6000);
+}
+
 function beginLocal() {
   app.countdown = COUNTDOWN_FRAMES;
   app.goUntil = 0;
@@ -201,6 +210,7 @@ function beginLocal() {
   applyLayout();
   hidePanels();
   audio.unlock();
+  showGestureTip();
 }
 
 function endSession() {
@@ -429,6 +439,7 @@ function startOnlineMatch(m) {
   applyLayout();
   hidePanels();
   audio.unlock();
+  showGestureTip();
 }
 
 function onState(m) {

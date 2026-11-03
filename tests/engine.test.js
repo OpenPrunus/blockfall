@@ -59,6 +59,18 @@ test('déplacements : gauche, droite, murs, et répétition automatique après l
   assert.equal(both.piece.x, xb, 'gauche + droite : rien');
 });
 
+test('actions « left » et « right » : une case à la fois, bloquées par les murs', () => {
+  const b = ready(fresh(21));
+  const x0 = b.piece.x;
+  step(b, { a: ['left'] });
+  assert.equal(b.piece.x, x0 - 1);
+  step(b, { a: ['right', 'right'] });
+  assert.equal(b.piece.x, x0 + 1, 'plusieurs pas dans la même image');
+  for (let i = 0; i < 12; i++) step(b, { a: ['left'] });
+  const minX = Math.min(...SHAPES[b.piece.type][b.piece.rot].map(([cx]) => b.piece.x + cx));
+  assert.equal(minX, 0, 'arrêtée contre le mur gauche');
+});
+
 test('rotation horaire et anti-horaire, et la pièce O ne bouge pas', () => {
   const b = ready(fresh(11));
   b.piece = { type: T, rot: 0, x: 3, y: 5 };

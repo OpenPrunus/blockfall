@@ -89,24 +89,71 @@ export class Controller {
     return input;
   }
 
-  /** Branche les boutons tactiles (`data-k` : left, right, down, cw, ccw, hd, hold). */
-  bindTouch(root) {
-    for (const btn of root.querySelectorAll('button[data-k]')) {
-      const name = btn.dataset.k;
-      btn.addEventListener('pointerdown', (e) => {
-        if (!this.enabled) return;
-        btn.setPointerCapture(e.pointerId);
-        btn.classList.add('down');
-        this.press(name);
-        e.preventDefault();
-      });
-      for (const ev of ['pointerup', 'pointercancel', 'lostpointercapture']) {
-        btn.addEventListener(ev, () => {
-          btn.classList.remove('down');
-          this.release(name);
-        });
+  /** Un pas de côté (une case), envoyé comme une action : fiable même si plusieurs arrivent dans la même image. */
+  stepSide(dir) {
+    const name = dir < 0 ? 'left' : 'right';
+    this.actions.push(name);
+    this.handlers.onAction?.(name);
+  }
+
+  /**
+   * Commandes tactiles par gestes sur `target` : glisser à gauche ou à droite déplace la pièce d'une case par case parcourue,
+   * glisser vers le haut ou toucher la tourne, glisser vers le bas la pose d'un coup, un appui long la met en réserve.
+   * `cellPx()` donne la taille d'une case à l'écran (en pixels CSS).
+   */
+  bindGestures(target, cellPx) {
+    const TAP_MS = 260;
+    const TAP_PX = 14;
+    const SWIPE_PX = 46;
+    const LONG_MS = 420;
+    let g = null;
+    const end = () => {
+      if (g) clearTimeout(g.long);
+      g = null;
+    };
+    target.addEventListener('pointerdown', (e) => {
+      if (!this.enabled || e.pointerType === 'mouse' || g) return;
+      if (e.target instanceof Element && e.target.closest('button, a, input, select, .panel')) return;
+      g = { id: e.pointerId, x0: e.clientX, y0: e.clientY, x: e.clientX, t0: performance.now(), moved: false, done: false, horizontal: false, long: null };
+      g.long = setTimeout(() => {
+        if (g && !g.moved && !g.done) {
+          g.done = true;
+          this.press('hold');
+        }
+      }, LONG_MS);
+    });
+    window.addEventListener('pointermove', (e) => {
+      if (!g || e.pointerId !== g.id || !this.enabled) return;
+      const dx = e.clientX - g.x0;
+      const dy = e.clientY - g.y0;
+      if (!g.moved && Math.hypot(dx, dy) > TAP_PX) {
+        g.moved = true;
+        clearTimeout(g.long);
       }
-      btn.addEventListener('contextmenu', (e) => e.preventDefault());
-    }
+      if (g.done || !g.moved) return;
+      if (!g.horizontal) {
+        if (Math.abs(dy) >= SWIPE_PX && Math.abs(dy) > 1.6 * Math.abs(dx)) {          // geste vertical net : tourner ou poser
+          g.done = true;
+          this.press(dy < 0 ? 'cw' : 'hd');
+          return;
+        }
+        if (Math.abs(dx) > Math.abs(dy)) g.horizontal = true;                          // geste horizontal : on suit le doigt
+      }
+      if (g.horizontal) {
+        const c = Math.max(12, cellPx());
+        while (Math.abs(e.clientX - g.x) >= c) {
+          const dir = e.clientX > g.x ? 1 : -1;
+          g.x += dir * c;
+          this.stepSide(dir);
+        }
+      }
+    });
+    const up = (e) => {
+      if (!g || e.pointerId !== g.id) return;
+      if (!g.moved && !g.done && performance.now() - g.t0 < TAP_MS && this.enabled) this.press('cw');   // un simple toucher tourne
+      end();
+    };
+    window.addEventListener('pointerup', up);
+    window.addEventListener('pointercancel', end);
   }
 }

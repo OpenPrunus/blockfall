@@ -64,22 +64,11 @@ input { flex: 1; min-width: 160px; user-select: text; -webkit-user-select: text;
 @media (pointer: coarse) { .gh, .all { min-height: 44px; } }
 @media (prefers-reduced-motion: reduce) { .gh, .all { transition: none; } }
 
-/* ---------- commandes tactiles ---------- */
-#touch { flex: none; display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; padding: 8px max(12px, env(safe-area-inset-right)) max(10px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left)); touch-action: none; }
-#touch .grp { display: flex; gap: 10px; align-items: flex-end; }
-#touch .grp.right { display: grid; grid-template-columns: repeat(2, auto); gap: 10px; }
-#touch button { width: clamp(58px, 17vw, 82px); height: clamp(58px, 17vw, 82px); border-radius: 50%; border: 2px solid rgba(255, 255, 255, 0.55); background: rgba(255, 255, 255, 0.1); color: #fff; font-size: clamp(22px, 6vw, 32px); touch-action: none; }
-#touch button.small { width: clamp(46px, 13vw, 62px); height: clamp(46px, 13vw, 62px); font-size: clamp(18px, 5vw, 24px); }
-#touch button.drop { background: rgba(25, 211, 243, 0.25); border-color: var(--accent); }
-#touch button.down { background: rgba(255, 255, 255, 0.4); }
-#touch .grp.right { grid-template-areas: 'hold ccw' 'cw hd'; }
-#touch [data-k=hold] { grid-area: hold; justify-self: end; } #touch [data-k=ccw] { grid-area: ccw; } #touch [data-k=cw] { grid-area: cw; } #touch [data-k=hd] { grid-area: hd; }
-
-/* écran large (paysage) : les commandes flottent dans les coins libres, sous la réserve et les pièces à venir */
-body[data-layout='wide'] #touch { position: absolute; inset: auto 0 0 0; pointer-events: none; padding-bottom: max(8px, env(safe-area-inset-bottom)); }
-body[data-layout='wide'] #touch .grp { pointer-events: auto; }
-body[data-layout='wide'] #touch button { width: clamp(52px, 11vh, 72px); height: clamp(52px, 11vh, 72px); font-size: clamp(20px, 5vh, 28px); }
-body[data-layout='wide'] #touch button.small { width: clamp(42px, 9vh, 56px); height: clamp(42px, 9vh, 56px); font-size: clamp(16px, 4vh, 22px); }
+/* ---------- commandes tactiles : des gestes sur toute la zone de jeu, pas de boutons ---------- */
+html, body { touch-action: none; }
+#gesture-tip { position: absolute; left: 50%; bottom: max(56px, calc(env(safe-area-inset-bottom) + 40px)); transform: translateX(-50%); width: min(92vw, 460px); margin: 0; padding: 8px 14px; border-radius: 12px; background: rgba(10, 15, 33, 0.82); border: 1px solid var(--line); text-align: center; font-size: 13px; color: #dbe4ff; pointer-events: none; opacity: 0; transition: opacity 0.4s ease; }
+#gesture-tip.show { opacity: 1; }
+@media (prefers-reduced-motion: reduce) { #gesture-tip { transition: none; } }
 
 /* téléphone debout : une astuce sous le plateau */
 @media (max-width: 640px) and (orientation: portrait) {

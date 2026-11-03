@@ -340,6 +340,32 @@ final class GameHubTest extends TestCase
         $this->assertSame($before[2] - 1, $after[2], 'un appui très court compte quand même');
     }
 
+    public function testSideStepActionsMoveThePieceOneCellEachEvenSeveralInTheSameFrame(): void
+    {
+        [$a, $ta, , $tb] = $this->startRankedMatch();
+        $this->untilGo();
+        $this->ticks(20);
+        $me = $ta->last('match')['side'];
+        $x = static function (FakeTransport $t) use ($me): ?int {
+            foreach (array_reverse($t->of('s')) as $m) {
+                if (isset($m['b'][$me]['p'])) {
+                    return $m['b'][$me]['p'][2];
+                }
+            }
+
+            return null;
+        };
+        $before = $x($tb);
+        $this->say($a, ['t' => 'act', 'a' => 'left']);
+        $this->say($a, ['t' => 'act', 'a' => 'left']);
+        $this->say($a, ['t' => 'act', 'a' => 'left']);
+        $this->ticks(2);
+        $this->assertSame($before - 3, $x($tb), 'trois pas à gauche');
+        $this->say($a, ['t' => 'act', 'a' => 'right']);
+        $this->ticks(2);
+        $this->assertSame($before - 2, $x($tb));
+    }
+
     public function testInvalidInputIsRefusedOrIgnored(): void
     {
         [$a, $ta, $b] = $this->startRankedMatch();

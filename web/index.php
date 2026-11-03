@@ -20,21 +20,8 @@ $ws = (string) getenv('BLOCKFALL_WS');
     <canvas id="game" aria-label="Blockfall"></canvas>
     <button id="pause-btn" class="icon-btn" hidden aria-label="Pause">⏸</button>
     <button id="fs-btn" class="icon-btn" hidden data-i18n-aria="fullscreen">⛶</button>
+    <p id="gesture-tip" data-i18n="gestureTip"></p>
     <p id="rotate-tip" data-i18n="rotateTip"></p>
-  </div>
-
-  <div id="touch" hidden>
-    <div class="grp left">
-      <button data-k="left" data-i18n-aria="left">◀</button>
-      <button data-k="down" data-i18n-aria="softDrop">▼</button>
-      <button data-k="right" data-i18n-aria="right">▶</button>
-    </div>
-    <div class="grp right">
-      <button data-k="hold" class="small" data-i18n-aria="holdKey">⇄</button>
-      <button data-k="ccw" class="small" data-i18n-aria="rotateCcw">⟲</button>
-      <button data-k="cw" data-i18n-aria="rotateCw">⟳</button>
-      <button data-k="hd" class="drop" data-i18n-aria="hardDrop">⤓</button>
-    </div>
   </div>
 
   <section id="menu" class="panel">

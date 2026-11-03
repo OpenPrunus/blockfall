@@ -205,61 +205,108 @@ describe('page et modes locaux', () => {
   });
 });
 
-describe('mobile', () => {
-  const inView = async (sel, device) => {
-    const r = await rect(sel);
-    return r.w > 0 && r.h > 0 && r.x >= -1 && r.y >= -1 && r.x + r.w <= device.w + 1 && r.y + r.h <= device.h + 1;
-  };
-  const noScroll = (device) => ev(`document.documentElement.scrollWidth <= ${device.w} && document.documentElement.scrollHeight <= ${device.h}`);
+const touchEvent = (type, x, y) => call('Input.dispatchTouchEvent', { type, touchPoints: type === 'touchEnd' ? [] : [{ x, y }] });
+/** Glisse un doigt de (x0, y0) à (x1, y1) en plusieurs étapes, comme sur un vrai écran. */
+const swipe = async (x0, y0, x1, y1, steps = 10) => {
+  await touchEvent('touchStart', x0, y0);
+  for (let i = 1; i <= steps; i++) { await touchEvent('touchMove', x0 + ((x1 - x0) * i) / steps, y0 + ((y1 - y0) * i) / steps); await sleep(14); }
+  await touchEvent('touchEnd');
+  await sleep(80);
+};
 
-  test('portrait : plateau en grand, adversaire en petit, boutons tactiles entiers et assez grands, sans défilement', async () => {
+describe('mobile : des gestes, pas de boutons', () => {
+  const noScroll = (device) => ev(`document.documentElement.scrollWidth <= ${device.w} && document.documentElement.scrollHeight <= ${device.h}`);
+  const touch = touchEvent;
+  const center = async () => { const r = await rect('#game'); return { x: r.cx, y: r.cy, cell: (r.w / (await ev('window.__blockfall.renderer.w'))) * (await ev('window.__blockfall.renderer.units[0].c')) }; };
+
+  test('portrait : plus de boutons, le plateau prend toute la largeur, rien ne déborde', async () => {
     await open(PHONE_PORTRAIT);
-    assert.equal(await ev('document.querySelector("#fs-btn").hidden'), true, 'pas de plein écran hors partie');
     await startMode('ai');
+    assert.equal(await ev('document.querySelector("#touch")'), null, 'plus de barre de boutons');
+    assert.equal(await ev('document.querySelectorAll("button[data-k]").length'), 0);
     assert.equal(await ev('document.body.dataset.layout'), 'tall');
-    assert.equal(await ev('!document.querySelector("#touch").hidden'), true, 'commandes tactiles');
     assert.equal(await noScroll(PHONE_PORTRAIT), true);
     const canvas = await rect('#game');
-    assert.ok(canvas.w <= PHONE_PORTRAIT.w + 1 && canvas.h <= PHONE_PORTRAIT.h);
-    for (const k of ['left', 'right', 'down', 'cw', 'ccw', 'hd', 'hold']) {
-      const sel = `#touch [data-k=${k}]`;
-      assert.ok(await inView(sel, PHONE_PORTRAIT), `${k} visible dans l'écran`);
-      const r = await rect(sel);
-      assert.ok(r.w >= 44 && r.h >= 44, `${k} : ${Math.round(r.w)}x${Math.round(r.h)} (44 px au moins)`);
-    }
-    const bar = await rect('#touch');
-    assert.ok(canvas.y + canvas.h <= bar.y + 2, 'les boutons sont sous le plateau, pas dessus');
+    assert.ok(canvas.w >= PHONE_PORTRAIT.w * 0.98, `largeur utilisée : ${Math.round(canvas.w)} / ${PHONE_PORTRAIT.w}`);
+    assert.ok(canvas.h >= 520, `hauteur : ${Math.round(canvas.h)}`);
     assert.equal(await ev('getComputedStyle(document.querySelector("#rotate-tip")).display'), 'block', 'astuce de rotation');
-    assert.equal(await ev('!document.querySelector("#fs-btn").hidden'), true, 'bouton plein écran en jeu');
+    assert.equal(await ev('document.querySelector("#gesture-tip").classList.contains("show")'), true, 'rappel des gestes au début');
+    assert.equal(await ev('!document.querySelector("#fs-btn").hidden'), true, 'plein écran en jeu');
     await shot('05-phone-portrait');
   });
 
-  test('on joue entièrement au doigt : déplacer, tourner, réserve, chute douce et chute dure', async () => {
+  test('glisser à gauche et à droite déplace la pièce d\'une case par case parcourue', async () => {
     for (const device of [PHONE_PORTRAIT, PHONE_LANDSCAPE]) {
       await open(device);
       await startMode('solo');
+      const c = await center();
       const p0 = (await game_()).piece;
-      await tap('#touch [data-k=left]');
-      await tap('#touch [data-k=left]');
-      assert.ok((await game_()).piece.x <= p0.x - 2, `${device.w}x${device.h} : deux pas à gauche`);
-      await tap('#touch [data-k=cw]');
-      assert.equal((await game_()).piece.rot, (p0.rot + 1) % 4, 'rotation');
-      const t0 = (await game_()).piece.type;
-      await tap('#touch [data-k=hold]');
-      assert.equal((await game_()).hold, t0, 'réserve');
-      const y0 = (await game_()).piece.y;
-      const r = await rect('#touch [data-k=down]');
-      await call('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: r.cx, y: r.cy }] });
-      await sleep(500);
-      await call('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
-      assert.ok((await game_()).piece.y > y0 + 4, 'chute douce tant que le doigt reste appuyé');
-      const id = (await game_()).pieceId;
-      await tap('#touch [data-k=hd]');
-      await waitFor(async () => (await game_()).pieceId === id + 1, 3000, 'chute dure');
+      await swipe(c.x, c.y, c.x - c.cell * 3.4, c.y + 6);
+      const left = (await game_()).piece;
+      assert.equal(left.x, p0.x - 3, `${device.w}x${device.h} : trois cases à gauche (${p0.x} -> ${left.x})`);
+      await swipe(c.x, c.y, c.x + c.cell * 2.5, c.y - 4);
+      assert.equal((await game_()).piece.x, left.x + 2, 'deux cases à droite');
     }
   });
 
-  test('paysage : le plateau occupe toute la hauteur, les boutons sont dans les coins et entiers', async () => {
+  test('glisser vers le haut ou toucher tourne, glisser vers le bas pose d\'un coup, appui long met en réserve', async () => {
+    for (const device of [PHONE_PORTRAIT, PHONE_LANDSCAPE]) {
+      await open(device);
+      await startMode('solo');
+      const c = await center();
+      const p0 = (await game_()).piece;
+      await swipe(c.x, c.y + 20, c.x + 4, c.y - 90);
+      assert.equal((await game_()).piece.rot, (p0.rot + 1) % 4, `${device.w}x${device.h} : glisser vers le haut tourne`);
+      await touch('touchStart', c.x, c.y);
+      await sleep(60);
+      await touch('touchEnd');
+      await sleep(80);
+      assert.equal((await game_()).piece.rot, (p0.rot + 2) % 4, 'un simple toucher tourne aussi');
+      const t0 = (await game_()).piece.type;
+      await touch('touchStart', c.x, c.y);
+      await sleep(600);
+      await touch('touchEnd');
+      await sleep(80);
+      assert.equal((await game_()).hold, t0, 'un appui long met la pièce en réserve');
+      const before = await game_();
+      await swipe(c.x, c.y - 60, c.x + 3, c.y + 80);
+      await waitFor(async () => (await game_()).pieceId === before.pieceId + 1, 3000, 'chute dure');
+      assert.ok((await game_()).score > before.score, 'la chute dure rapporte des points');
+    }
+  });
+
+  test('un glisser net vers le bas ne déplace pas la pièce de côté, et un glisser horizontal ne la pose pas', async () => {
+    await open(PHONE_PORTRAIT);
+    await startMode('solo');
+    const c = await center();
+    const p0 = (await game_()).piece;
+    const id = (await game_()).pieceId;
+    await swipe(c.x, c.y, c.x - c.cell * 2.2, c.y + 22);          // surtout horizontal, un peu vers le bas
+    const moved = await game_();
+    assert.equal(moved.pieceId, id, 'pas de chute dure');
+    assert.equal(moved.piece.x, p0.x - 2);
+    await swipe(c.x, c.y - 40, c.x + 9, c.y + 90);                  // surtout vertical, un peu de côté
+    await waitFor(async () => (await game_()).pieceId === id + 1, 3000, 'chute dure');
+  });
+
+  test('les gestes ne s\'appliquent qu\'en jeu : dans le menu un glisser ne fait rien, et à la souris non plus', async () => {
+    await open(PHONE_PORTRAIT);
+    const before = await ev('JSON.stringify(window.__blockfall.app.attract.board.piece)');
+    await swipe(200, 300, 100, 300);
+    assert.equal(await ev('window.__blockfall.ctl.actions.length'), 0, 'aucune action dans le menu');
+    await open(DESKTOP);
+    await startMode('solo');
+    const r = await rect('#game');
+    const p0 = (await game_()).piece;
+    await call('Input.dispatchMouseEvent', { type: 'mousePressed', x: r.cx, y: r.cy, button: 'left', clickCount: 1 });
+    await call('Input.dispatchMouseEvent', { type: 'mouseMoved', x: r.cx - 150, y: r.cy, button: 'left' });
+    await call('Input.dispatchMouseEvent', { type: 'mouseReleased', x: r.cx - 150, y: r.cy, button: 'left', clickCount: 1 });
+    assert.equal((await game_()).piece.x, p0.x, 'la souris ne déplace pas la pièce');
+    assert.equal(await ev('document.querySelector("#gesture-tip").classList.contains("show")'), false, 'pas de rappel des gestes sur un ordinateur');
+    assert.ok(before !== undefined);
+  });
+
+  test('paysage : le plateau occupe toute la hauteur, aucun bouton, rien ne déborde', async () => {
     for (const device of [PHONE_LANDSCAPE, { w: 667, h: 375, touch: true }]) {
       await open(device);
       await startMode('ai');
@@ -267,32 +314,29 @@ describe('mobile', () => {
       const canvas = await rect('#game');
       assert.ok(canvas.h >= device.h - 2, `plateau sur toute la hauteur : ${Math.round(canvas.h)} / ${device.h}`);
       assert.equal(await noScroll(device), true);
-      for (const k of ['left', 'right', 'down', 'cw', 'ccw', 'hd', 'hold']) {
-        assert.ok(await inView(`#touch [data-k=${k}]`, device), `${device.w}x${device.h} : ${k} visible`);
-      }
-      const left = await rect('#touch [data-k=left]');
-      const hd = await rect('#touch [data-k=hd]');
-      assert.ok(left.x < device.w / 3 && hd.x > (2 * device.w) / 3, 'commandes aux deux coins');
+      assert.equal(await ev('document.querySelectorAll("button[data-k]").length'), 0);
       await shot(`05-phone-landscape-${device.w}`);
     }
   });
 
-  test('le menu tient sur un petit téléphone couché et debout', async () => {
+  test('le menu tient sur un petit téléphone couché et debout, et décrit les gestes', async () => {
     for (const device of [PHONE_PORTRAIT, { w: 667, h: 375, touch: true }]) {
       await open(device);
       const m = await rect('#menu');
       assert.ok(m.x >= 0 && m.x + m.w <= device.w + 1, `menu dans la largeur (${device.w})`);
       assert.ok(m.h <= device.h * 0.95, `menu moins haut que l'écran : ${Math.round(m.h)} / ${device.h}`);
-      assert.ok(await inView('#menu [data-action=solo]', device), 'le bouton principal est visible');
       assert.equal(await noScroll(device), true);
     }
+    await open(PHONE_PORTRAIT);
+    assert.match(await ev('getComputedStyle(document.querySelector(".touchhint")).display'), /block/);
+    assert.match(await ev('document.querySelector(".touchhint").textContent'), /Glisse/);
   });
 
   test('le plein écran n\'apparaît qu\'en jeu sur tactile, et les zones sûres sont prévues', async () => {
     await open(PHONE_LANDSCAPE);
     await startMode('solo');
     assert.equal(await ev('!document.querySelector("#fs-btn").hidden'), true);
-    const css = await ev('(() => { const t = [...document.styleSheets[0].cssRules].map((r) => r.cssText).join(" "); return t.includes("safe-area-inset-bottom") && t.includes("safe-area-inset-left"); })()');
+    const css = await ev('(() => { const t = [...document.styleSheets[0].cssRules].map((r) => r.cssText).join(" "); return t.includes("safe-area-inset-bottom") && t.includes("safe-area-inset-top"); })()');
     assert.equal(css, true);
   });
 });
@@ -334,7 +378,7 @@ describe('mode en ligne avec un robot adversaire', () => {
     await waitFor(() => ev('!document.querySelector("#lobby").hidden'), 3000, 'retour au salon');
   });
 
-  test('sur téléphone, un match en ligne s\'affiche en portrait avec l\'adversaire en petit', async () => {
+  test('sur téléphone, un match en ligne s\'affiche en portrait avec l\'adversaire en petit et se joue aux gestes', async () => {
     await open(PHONE_PORTRAIT);
     await click('#menu [data-action=online]');
     await waitFor(() => ev('!document.querySelector("#join").hidden'), 8000, 'connexion');
@@ -347,11 +391,22 @@ describe('mode en ligne avec un robot adversaire', () => {
     await robot.hello('RobotM', token('robotm'));
     await click('#quick');
     robot.send({ t: 'queue' });
-    await robot.next('match');
+    const match = await robot.next('match');
     await waitFor(() => ev('window.__blockfall.online.state.every((s) => s.g)'), 6000, 'plateaux reçus');
     assert.equal(await ev('document.body.dataset.layout'), 'tall');
-    assert.equal(await ev('!document.querySelector("#touch").hidden'), true);
+    assert.equal(await ev('document.querySelector("#touch")'), null);
     assert.equal(await ev('window.__blockfall.renderer.mini !== null'), true, 'petit plateau adverse');
+    // un glisser vers la gauche déplace la pièce du joueur : le robot le voit
+    const humanSide = 1 - match.side;
+    await waitFor(() => robot.of('s').some((m) => m.b[humanSide]?.p), 6000, 'première pièce de l\'humain');
+    const lastP = () => { let p; for (const m of robot.of('s')) if (m.b[humanSide]?.p) p = m.b[humanSide].p; return p; };
+    const x0 = lastP()[2];
+    const r = await rect('#game');
+    const cell = (r.w / (await ev('window.__blockfall.renderer.w'))) * (await ev('window.__blockfall.renderer.units[0].c'));
+    await swipe(r.cx, r.cy, r.cx - cell * 3.4, r.cy + 5);
+    await waitFor(() => lastP()[2] <= x0 - 3, 3000, 'pièce déplacée chez l\'adversaire');
+    await swipe(r.cx, r.cy + 40, r.cx + 3, r.cy - 100);
+    await waitFor(() => lastP()[1] !== 0 || true, 500, 'rotation');
     await shot('08-phone-online');
     robot.send({ t: 'leave' });
     robot.close();

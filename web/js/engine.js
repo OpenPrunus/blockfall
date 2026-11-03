@@ -283,6 +283,8 @@ function lockPiece(b, ev) {
 
 function action(b, a, ev) {
   switch (a) {
+    case 'left': move(b, -1); break;
+    case 'right': move(b, 1); break;
     case 'cw': rotate(b, 1); break;
     case 'ccw': rotate(b, -1); break;
     case 'hold': holdPiece(b, ev); break;
@@ -299,7 +301,7 @@ function action(b, a, ev) {
 
 /**
  * Avance d'une image (1/60 s). `input` : { l, r, d } touches tenues, `a` : actions pressées pendant cette image
- * ('cw', 'ccw', 'hd', 'hold'). Renvoie les événements : lock, clear, attack, garbage, hold, dead.
+ * ('left', 'right' : une case ; 'cw', 'ccw', 'hd', 'hold'). Renvoie les événements : lock, clear, attack, garbage, hold, dead.
  */
 export function step(b, input, ev = []) {
   if (!b.alive) return ev;

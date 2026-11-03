@@ -17,9 +17,10 @@ player (lobby, quick match, challenges, Elo leaderboard). French and English, ke
   the browsers only send their keys and receive what changed. Three-second countdown, rematch, ping display.
 - **Ranked matches** with an Elo rating, without any account: each browser has a secret token (only its SHA-256 hash is stored)
   that reserves the nickname. Anti-collusion: gains shrink when the same two players meet again within 24 hours.
-- **Phones**: the board takes the width in portrait (the opponent's board is a small one at the top) and the full height in
-  landscape; big touch buttons (move, soft drop, rotate both ways, hard drop, hold), fullscreen with landscape lock on Android,
-  screen kept awake, notches and home bar respected.
+- **Phones**: no buttons, gestures on the whole play area. Swipe left or right to move the piece one cell per cell your finger
+  travels, swipe up or tap to rotate, swipe down to drop it at once, long press to hold. The board takes the width in portrait (the
+  opponent's board is a small one at the top) and the full height in landscape; fullscreen with landscape lock on Android, screen
+  kept awake, notches and home bar respected.
 - Sounds are synthesized (no audio files); the solo and computer modes work offline.
 
 ## Quick start
@@ -37,11 +38,11 @@ the configuration variables and a reverse-proxy example.
 
 | | Keyboard | Phone |
 | --- | --- | --- |
-| Move | ← → or **A D** (**Q** on AZERTY) | ◀ ▶ |
-| Soft drop | ↓ or **S** | ▼ (held) |
-| Rotate | ↑, **X** or **W** (clockwise), **Z** or Ctrl (counter-clockwise) | ⟳ ⟲ |
-| Hard drop | **Space** | ⤓ |
-| Hold | **C**, **H** or Shift | ⇄ |
+| Move | ← → or **A D** (**Q** on AZERTY) | swipe left / right (one cell per cell travelled) |
+| Soft drop | ↓ or **S** | — |
+| Rotate | ↑, **X** or **W** (clockwise), **Z** or Ctrl (counter-clockwise) | swipe up, or tap |
+| Hard drop | **Space** | swipe down |
+| Hold | **C**, **H** or Shift | long press |
 | Pause | **Esc** or **P** | ⏸ |
 
 ## Architecture
@@ -52,7 +53,7 @@ web/                 the website, served by Apache (document root)
   js/engine.js       the game: board, pieces, rotations, gravity, scoring, garbage, duel (pure, integers only)
   js/ai.js           the computer opponent (seeded random generator: a game is replayable)
   js/render.js       canvas rendering: board, ghost, hold, next, garbage gauge, effects; wide and tall layouts
-  js/input.js        keyboard and touch controller (held keys, actions, taps shorter than a frame still count)
+  js/input.js        keyboard and touch-gesture controller (held keys, actions, taps shorter than a frame still count)
   js/main.js         menus, game loop at 60 Hz, solo / computer / online modes, lobby
   js/net.js          WebSocket client       js/audio.js  synthesized sounds       js/i18n.js  FR / EN
   api.php            leaderboard (GET), reads the file written by the game server
@@ -89,8 +90,8 @@ the WebSocket server and support classes shared with the other games (namespace 
 
 - The browser opens a WebSocket, sends `hello` (nickname + token) and joins the lobby. `queue` starts a quick match, `challenge`
   invites a player. The server tosses a seed and sends `match`, then a countdown (`cd`) and `go`.
-- During the game the browser sends `keys` (left, right, soft drop held — only when they change) and `act` (`cw`, `ccw`, `hd`,
-  `hold`). The server steps both boards at 60 Hz and sends `s` with only what changed on each board, plus events (lock, clear,
+- During the game the browser sends `keys` (left, right, soft drop held — only when they change) and `act` (`left`, `right`: one
+  cell; `cw`, `ccw`, `hd`, `hold`). The server steps both boards at 60 Hz and sends `s` with only what changed on each board, plus events (lock, clear,
   garbage, attack) for the effects. The loser is the first whose next piece has no room; then `result`.
 - Keys are never trusted for anything but moving your own piece: no score, no board and no garbage ever comes from a client.
   Origin check on the WebSocket, 120 messages per second per client, 2 KB per message.

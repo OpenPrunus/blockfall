@@ -86,6 +86,21 @@ final class EngineTest extends TestCase
         $this->assertSame($xc, $c->piece?->x);
     }
 
+    public function testSideStepActionsMoveOneCellEachAndStopAtTheWall(): void
+    {
+        $b = self::ready(new Board(21));
+        $x0 = $b->piece?->x ?? 0;
+        $b->step(new Input(actions: [Action::Left]));
+        $this->assertSame($x0 - 1, $b->piece?->x);
+        $b->step(new Input(actions: [Action::Right, Action::Right]));
+        $this->assertSame($x0 + 1, $b->piece?->x, 'plusieurs pas dans la même image');
+        for ($i = 0; $i < 12; $i++) {
+            $b->step(new Input(actions: [Action::Left]));
+        }
+        $min = min(array_map(static fn (array $c): int => ($b->piece?->x ?? 0) + $c[0], Shapes::cells($b->piece?->type ?? 0, $b->piece?->rot ?? 0)));
+        $this->assertSame(0, $min);
+    }
+
     public function testHardDropScoresTwoPerRowAndSpawnsTheNextPiece(): void
     {
         $b = self::ready(new Board(5));

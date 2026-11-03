@@ -19,7 +19,7 @@ function chaos(rand) {
     if (rand() < 0.08) held = { l: rand() < 0.3, r: rand() < 0.3, d: rand() < 0.25 };
     const a = [];
     const x = rand();
-    if (x < 0.05) a.push('cw'); else if (x < 0.09) a.push('ccw'); else if (x < 0.115) a.push('hd'); else if (x < 0.13) a.push('hold');
+    if (x < 0.05) a.push('cw'); else if (x < 0.09) a.push('ccw'); else if (x < 0.115) a.push('hd'); else if (x < 0.13) a.push('hold'); else if (x < 0.17) a.push('left'); else if (x < 0.21) a.push('right');
     return { ...held, a };
   };
 }

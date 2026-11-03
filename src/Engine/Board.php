@@ -319,6 +319,12 @@ final class Board
     private function act(Action $action, array &$ev): void
     {
         switch ($action) {
+            case Action::Left:
+                $this->move(-1);
+                break;
+            case Action::Right:
+                $this->move(1);
+                break;
             case Action::Cw:
                 $this->rotate(1);
                 break;
