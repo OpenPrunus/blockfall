@@ -23,6 +23,8 @@ final class Room
     public array $queued = [[], []];
     /** @var array<int, array<string, mixed>> dernier état envoyé de chaque plateau */
     public array $sent = [[], []];
+    /** Pourquoi la partie n'est pas classée alors que les deux joueurs avaient un jeton (same_ip, too_many_accounts, pair_limit). */
+    public ?string $why = null;
     /** Le résultat a été communiqué aux joueurs. */
     public bool $finished = false;
     /** Fin de la fenêtre de revanche (horodatage), une fois le résultat connu. */

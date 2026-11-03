@@ -44,6 +44,7 @@ const online = {
   players: [],
   invite: null,
   ranked: false,
+  why: null,
   oppLeft: false,
   state: [{}, {}],      // état fusionné de chaque plateau (le serveur n'envoie que les changements)
   cd: 0,                // décompte annoncé par le serveur (secondes), 0 = en jeu
@@ -430,6 +431,7 @@ function startOnlineMatch(m) {
   online.status = 'playing';
   online.side = m.side;
   online.ranked = m.ranked;
+  online.why = m.why ?? null;
   online.oppLeft = false;
   online.invite = null;
   online.state = [{}, {}];
@@ -465,7 +467,7 @@ function onResult(m) {
     $('#over-title').textContent = t(mine ? 'youWin' : 'youLose');
     const lines = m.lines[online.side];
     const theirs = m.lines[1 - online.side];
-    const rating = m.delta !== undefined ? t('ratingDelta', { rating: m.rating, delta: (m.delta >= 0 ? '+' : '') + m.delta }) : (m.forfeit ? '' : t(m.ranked ? 'ranked' : 'unranked'));
+    const rating = m.delta !== undefined ? t('ratingDelta', { rating: m.rating, delta: (m.delta >= 0 ? '+' : '') + m.delta }) : (m.forfeit ? '' : m.ranked ? t('ranked') : t(online.why ? `why_${online.why}` : 'unranked'));
     $('#over-detail').textContent = [t('duelDetail', { a: lines, b: theirs }), m.forfeit && mine ? t('oppLeft') : ''].filter(Boolean).join(' · ');
     $('#over-extra').textContent = rating;
     $('#over-again').textContent = t('rematch');

@@ -98,6 +98,10 @@ the WebSocket server and support classes shared with the other games (namespace 
 
 Class diagrams (editable in [draw.io](https://app.diagrams.net)) are in [`docs/diagrams/`](docs/diagrams).
 
+## Anti-cheat (by IP)
+
+The server reads the real client address from `X-Real-IP`, trusted only when the request comes from a trusted proxy (`TRUSTED_PROXIES`, private networks by default; IPv6 grouped by /64). It is kept in memory only, never stored. A ranked match is refused (it becomes a friendly one, with the reason shown) when both players share an address, when one address uses too many accounts, or when the same pair has played too many ranked matches. Connections per address are capped (HTTP 429). Limits: `BLOCKFALL_MAX_CONN_PER_IP`, `BLOCKFALL_MAX_ACCOUNTS_PER_IP`, `BLOCKFALL_MAX_PAIR_MATCHES`, `BLOCKFALL_ALLOW_SAME_IP`. The logic lives in [arcade-core](https://github.com/OpenPrunus/arcade-core) ≥ 1.1.
+
 ## Tests
 
 ```bash
